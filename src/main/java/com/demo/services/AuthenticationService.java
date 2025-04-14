@@ -3,6 +3,7 @@ package com.demo.services;
 import com.demo.dto.requests.AuthenticationRequest;
 import com.demo.dto.requests.IntrospectRequest;
 import com.demo.dto.requests.LogoutRequest;
+import com.demo.dto.requests.RefreshTokenRequest;
 import com.demo.dto.response.AppException;
 import com.demo.dto.response.AuthenticationResponse;
 import com.demo.dto.response.ErrorCode;
@@ -36,6 +37,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -82,7 +84,7 @@ public class AuthenticationService {
         }
 
         return AuthenticationResponse.builder()
-                .loginSuccess(authenticated)
+                .loginSuccess(true)
                 .token(generateToken(user))
                 .build();
     }
@@ -117,6 +119,27 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         return signedJWT;
+    }
+
+    public AuthenticationResponse refreshToken(RefreshTokenRequest request) throws ParseException, JOSEException {
+        var signToken = verifyToken(request.getToken());
+        var jti = signToken.getJWTClaimsSet().getJWTID();
+        var expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jti)
+                .expiryTime(expiryTime)
+                .build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
+
+        var username = signToken.getJWTClaimsSet().getSubject();
+        var user = userRepository.findByName(username).orElseThrow(() -> new AppException(ErrorCode.UNEXISTING_USER));
+
+        return AuthenticationResponse.builder()
+                .loginSuccess(true)
+                .token(generateToken(user))
+                .build();
     }
 
     private String generateToken(User user) {
