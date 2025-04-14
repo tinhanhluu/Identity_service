@@ -1,0 +1,17 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /demo
+
+spring:
+  datasource:
+    url: "jdbc:mysql://localhost:3309/demoApp"
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+jwt:
+  signerKey: "pK5A/J/8PaTfn8jOJvR3tUQAf24YBbm8OfalltT2kNQOHCp489ahRyxeGxtq13hZ"
